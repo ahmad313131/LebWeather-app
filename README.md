@@ -95,3 +95,63 @@ Ideal for:
 
 MIT License
 
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1️⃣ Clone the repository
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+```
+###2️⃣ Database setup (XAMPP)
+
+Start Apache and MySQL in XAMPP
+
+Open phpMyAdmin: http://localhost/phpmyadmin
+
+Create a database named:
+```bash
+weather_app
+```
+##4 Import the SQL file:
+```bash
+backend/database/schema.sql
+```
+###3️⃣ Backend setup (Node.js)
+```bash
+cd backend
+npm install
+```
+##Create .env file:
+```bash
+cp .env.example .env
+```
+##Run backend:
+```bash
+npm run dev
+```
+##Backend runs on:
+```bash
+http://localhost:4000
+```
+###4️⃣ Frontend setup (React)
+
+Open a new terminal:
+```bash
+npm install
+npm start
+```
+##Frontend runs on:
+```bash
+http://localhost:3000
+```
+###🔐 Admin Panel
+
+Open in browser:
+```bash
+http://localhost:3000/#/admin
+Username: admin
+Password: admin123
+```
