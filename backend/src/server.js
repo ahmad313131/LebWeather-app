@@ -157,7 +157,8 @@ app.delete("/api/admin/regions/:id", authRequired, async (req, res) => {
   }
 });
 
-const port = Number(process.env.PORT || 4000);
-app.listen(port, () => {
-  console.log(`✅ Backend running on http://localhost:${port}`);
+const port = Number(process.env.PORT || 8080);
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`✅ Backend running on http://0.0.0.0:${port}`);
 });
