@@ -10,11 +10,28 @@ export default function WeatherCard({ region }) {
   const [weather, setWeather] = useState(null);
   const [forecast, setForecast] = useState([]);
 
+  const [settingsTick, setSettingsTick] = useState(0);
+
   useEffect(() => {
+    const onChange = () => setSettingsTick((x) => x + 1);
+    window.addEventListener("weather-settings-changed", onChange);
+    return () => window.removeEventListener("weather-settings-changed", onChange);
+  }, []);
+
+  useEffect(() => {
+      const units = (() => {
+      try {
+        const s = JSON.parse(localStorage.getItem("weather_settings_v1") || "{}");
+        return s.unit === "imperial" ? "imperial" : "metric";
+      } catch {
+        return "metric";
+      }
+    })();
+
     // current weather
     axios
       .get(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${region.lat}&lon=${region.lon}&appid=262239b759f5ba2fdf107e4a853f3dba&units=metric&lang=${i18n.language}`
+        `https://api.openweathermap.org/data/2.5/weather?lat=${region.lat}&lon=${region.lon}&appid=262239b759f5ba2fdf107e4a853f3dba&units=${units}&lang=${i18n.language}`
       )
       .then((res) => {
         setWeather({
@@ -33,7 +50,7 @@ export default function WeatherCard({ region }) {
     // forecast
     axios
       .get(
-        `https://api.openweathermap.org/data/2.5/forecast?lat=${region.lat}&lon=${region.lon}&appid=262239b759f5ba2fdf107e4a853f3dba&units=metric&lang=${i18n.language}`
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${region.lat}&lon=${region.lon}&appid=262239b759f5ba2fdf107e4a853f3dba&units=${units}&lang=${i18n.language}`
       )
       .then((res) => {
         const daily = res.data.list.filter((item) =>
@@ -48,7 +65,7 @@ export default function WeatherCard({ region }) {
           }))
         );
       });
-  }, [region, i18n.language]);
+  }, [region, i18n.language, settingsTick]);
 
   if (!weather) return null;
 

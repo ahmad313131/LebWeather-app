@@ -1,7 +1,11 @@
 import "./App.css";
 import Home from "./component/HomeComponent";
+import NavBar from "./component/NavBar";
+import MapPage from "./component/pages/MapPage";
+import FavoritesPage from "./component/pages/FavoritesPage";
+import SettingsPage from "./component/pages/SettingsPage";
+import ContactPage from "./component/pages/ContactPage";
 import { RegionsContext } from "./context/RegionContext";
-import WeatherMap from "./component/WeatherMap";
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "./config";
 import AdminPanel from "./component/admin/AdminPanel";
@@ -18,11 +22,29 @@ function useHashRoute() {
 
 export default function App() {
   const hash = useHashRoute();
-  const isAdmin = useMemo(() => (hash || "").toLowerCase() === "#/admin", [hash]);
+  const path = useMemo(() => {
+    const h = (hash || "#/").toLowerCase();
+    // keep original case for display routing
+    const raw = (hash || "#/").replace(/^#/, "");
+    return raw || "/";
+  }, [hash]);
+
+  const isAdmin = useMemo(() => (path || "").toLowerCase() === "/admin", [path]);
+  const cleanPath = useMemo(() => (path || "/").split("?")[0], [path]);
 
   const [lebanonRegions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  // Apply saved UI settings (dark mode) on app start
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("weather_settings_v1") || "{}");
+      if (s && typeof s.dark === "boolean") {
+        document.body.classList.toggle("dark", !!s.dark);
+      }
+    } catch {}
+  }, []);
 
   async function loadRegions() {
     setLoading(true);
@@ -65,19 +87,19 @@ export default function App() {
               </button>
             </div>
 
-            <h2 style={{ textAlign: "center", marginTop: "20px" }}>خريطة الطقس في لبنان</h2>
+            <NavBar activePath={cleanPath} />
 
-            {loadError ? (
-              <p style={{ textAlign: "center", color: "#b00020" }}>{loadError}</p>
-            ) : null}
-
-            {loading ? (
-              <p style={{ textAlign: "center" }}>Loading regions…</p>
+            {cleanPath === "/map" ? (
+              <MapPage regions={lebanonRegions} loading={loading} error={loadError} />
+            ) : cleanPath === "/favorites" ? (
+              <FavoritesPage />
+            ) : cleanPath === "/settings" ? (
+              <SettingsPage />
+            ) : cleanPath === "/contact" ? (
+              <ContactPage />
             ) : (
-              <WeatherMap key="lebanon-map" regions={lebanonRegions} />
+              <Home />
             )}
-
-            <Home />
           </>
         )}
       </RegionsContext.Provider>

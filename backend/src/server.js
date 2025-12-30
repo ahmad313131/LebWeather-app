@@ -43,6 +43,100 @@ app.get("/api/regions", async (req, res) => {
   }
 });
 
+// PUBLIC: Contact form (frontend Contact page)
+app.post("/api/contact", async (req, res) => {
+  const { name, email, message } = req.body || {};
+
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  const safeName = String(name).trim();
+  const safeEmail = String(email).trim();
+  const safeMessage = String(message).trim();
+
+  if (safeName.length < 2) return res.status(400).json({ error: "Name too short" });
+  if (!safeEmail.includes("@")) return res.status(400).json({ error: "Invalid email" });
+  if (safeMessage.length < 5) return res.status(400).json({ error: "Message too short" });
+
+  try {
+    const result = await query(
+      "INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)",
+      [safeName, safeEmail, safeMessage]
+    );
+
+    res.json({ ok: true, id: result.insertId });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+// ADMIN: Read contact messages
+app.get("/api/admin/contacts", authRequired, async (req, res) => {
+  try {
+    const rows = await query(
+      "SELECT id, name, email, message, created_at FROM contact_messages ORDER BY created_at DESC"
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
+// OPTIONAL: Favorites per client_id (stored in frontend localStorage)
+function getClientId(req) {
+  return String(req.headers["x-client-id"] || "").trim();
+}
+
+app.get("/api/favorites", async (req, res) => {
+  const clientId = getClientId(req);
+  if (!clientId) return res.status(400).json({ error: "Missing x-client-id header" });
+
+  try {
+    const rows = await query(
+      "SELECT city, created_at FROM favorites WHERE client_id = ? ORDER BY created_at DESC",
+      [clientId]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch favorites" });
+  }
+});
+
+app.post("/api/favorites", async (req, res) => {
+  const clientId = getClientId(req);
+  const { city } = req.body || {};
+  if (!clientId) return res.status(400).json({ error: "Missing x-client-id header" });
+  if (!city) return res.status(400).json({ error: "Missing city" });
+
+  const safeCity = String(city).trim();
+  if (safeCity.length < 2) return res.status(400).json({ error: "City too short" });
+
+  try {
+    await query(
+      "INSERT IGNORE INTO favorites (client_id, city) VALUES (?, ?)",
+      [clientId, safeCity]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to save favorite" });
+  }
+});
+
+app.delete("/api/favorites", async (req, res) => {
+  const clientId = getClientId(req);
+  const city = String(req.query.city || "").trim();
+  if (!clientId) return res.status(400).json({ error: "Missing x-client-id header" });
+  if (!city) return res.status(400).json({ error: "Missing city query param" });
+
+  try {
+    await query("DELETE FROM favorites WHERE client_id = ? AND city = ?", [clientId, city]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to delete favorite" });
+  }
+});
+
 // ADMIN: Login
 // Supports: password_hash (bcrypt) OR password_plain (temporary) and upgrades to hash after first successful login.
 app.post("/api/admin/login", async (req, res) => {
